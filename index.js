@@ -17,6 +17,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use("/api/reservations", require("./src/routes/reservations"));
+app.use("/api/auth", require("./src/routes/authRoutes"));
 
 // ✅ Solo esta ruta
 app.use("/api/rooms", require("./src/routes/rooms"));
