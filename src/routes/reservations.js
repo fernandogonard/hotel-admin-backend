@@ -1,19 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const reservationController = require('../controllers/reservationController');
-const auth = require('../middleware/authMiddleware');
-router.use(auth); 
-// Ruta protegida (solo usuarios autenticados pueden acceder)
-router.get('/secure', auth, reservationController.getReservations);
+const auth = require('../middleware/auth');
 
-// Filtro de búsqueda (podés también protegerla si querés)
-router.get('/filter/search', reservationController.filterReservations);
+// Proteger todas las rutas
+router.use(auth.protect);
 
-// Acceso general (o protegelo también)
+// Rutas públicas (requieren autenticación)
 router.get('/', reservationController.getReservations);
 router.get('/:id', reservationController.getReservationById);
-router.post('/', reservationController.createReservation);
-router.put('/:id', reservationController.updateReservation);
-router.delete('/:id', reservationController.deleteReservation);
+router.get('/filter/search', reservationController.filterReservations);
+
+// Rutas que requieren roles específicos
+router.post('/', auth.authorize(['admin']), reservationController.createReservation);
+router.put('/:id', auth.authorize(['admin']), reservationController.updateReservation);
+router.delete('/:id', auth.authorize(['admin']), reservationController.deleteReservation);
 
 module.exports = router;

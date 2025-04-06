@@ -1,79 +1,149 @@
-require("dotenv").config(); // Para usar variables de entorno
+require("dotenv").config();
 const User = require("../models/User");
-const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+
+// Función para generar token JWT
+const generateToken = (user) => {
+  return jwt.sign(
+    { 
+      id: user._id, 
+      role: user.role,
+      email: user.email 
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "1d" }
+  );
+};
 
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Buscar usuario por email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    console.log('Intento de login:', { email });
+
+    // Validar campos requeridos
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: "Email y contraseña son requeridos" 
+      });
     }
 
-    // Comparar contraseñas
-    const isMatch = await bcrypt.compare(password, user.password);
+    // Buscar usuario por email
+    console.log('Buscando usuario con email:', email.toLowerCase());
+    const user = await User.findOne({ 
+      email: email.toLowerCase(),
+      active: true 
+    });
+    console.log('Usuario encontrado:', user);
+
+    if (!user) {
+      return res.status(404).json({ 
+        message: "Usuario no encontrado o inactivo" 
+      });
+    }
+
+    // Verificar contraseña usando el método del modelo
+    const isMatch = await user.comparePassword(password);
+    console.log('Contraseña válida:', isMatch ? 'Sí' : 'No');
+
     if (!isMatch) {
-      return res.status(401).json({ message: "Contraseña incorrecta" });
+      return res.status(401).json({ 
+        message: "Credenciales inválidas" 
+      });
     }
 
     // Generar token JWT
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET, // Clave secreta desde variable de entorno
-      { expiresIn: "1d" }
-    );
+    const token = generateToken(user);
 
-    res.status(200).json({
-      message: "Login exitoso",
+    // Actualizar último login
+    await user.updateLastLogin();
+
+    // Enviar respuesta
+    res.json({
       token,
       user: {
         id: user._id,
-        email: user.email,
-        role: user.role,
         name: user.name,
-      },
+        email: user.email,
+        role: user.role
+      }
     });
-  } catch (err) {
-    console.error("Error al hacer login:", err);
-    res.status(500).json({ message: "Error del servidor" });
+  } catch (error) {
+    console.error('Error en login:', error);
+    res.status(500).json({ 
+      message: "Error en el servidor", 
+      error: error.message 
+    });
   }
 };
 
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-
   try {
-    // Verificar si el usuario ya existe
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "El usuario ya existe" });
+    const { name, email, password, role } = req.body;
+
+    // Validar campos requeridos
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        message: "Todos los campos son requeridos" 
+      });
     }
 
-    // Hashear la contraseña antes de guardarla
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Verificar si el usuario ya existe
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: "El email ya está registrado" 
+      });
+    }
 
-    // Crear nuevo usuario con contraseña encriptada
-    const newUser = new User({
+    // Crear nuevo usuario
+    const user = new User({
       name,
-      email,
-      password: hashedPassword,
-      role,
+      email: email.toLowerCase(),
+      password,
+      role: role || 'empleado'
     });
 
-    await newUser.save();
+    await user.save();
 
-    res.status(201).json({ message: "Usuario registrado exitosamente" });
-  } catch (err) {
-    console.error("Error al registrar usuario:", err);
-    res.status(500).json({ message: "Error del servidor" });
+    // Generar token JWT
+    const token = generateToken(user);
+
+    // Enviar respuesta
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Error en registro:', error);
+    res.status(500).json({ 
+      message: "Error en el servidor", 
+      error: error.message 
+    });
+  }
+};
+
+// Verificar token y obtener usuario actual
+const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (error) {
+    console.error('Error al obtener usuario:', error);
+    res.status(500).json({ 
+      message: "Error en el servidor", 
+      error: error.message 
+    });
   }
 };
 
 module.exports = {
   login,
   register,
+  getCurrentUser
 };
