@@ -1,6 +1,7 @@
 require("dotenv").config();
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 
 // Función para generar token JWT
 const generateToken = (user) => {
@@ -17,49 +18,48 @@ const generateToken = (user) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
+  
+  console.log("🔹 Intentando login con:", email, password);
 
   try {
-    console.log('Intento de login:', { email });
-
-    // Validar campos requeridos
     if (!email || !password) {
       return res.status(400).json({ 
+        success: false,
         message: "Email y contraseña son requeridos" 
       });
     }
 
-    // Buscar usuario por email
-    console.log('Buscando usuario con email:', email.toLowerCase());
     const user = await User.findOne({ 
       email: email.toLowerCase(),
       active: true 
     });
-    console.log('Usuario encontrado:', user);
+
+    console.log("🔹 Usuario encontrado en BD:", user);
 
     if (!user) {
       return res.status(404).json({ 
+        success: false,
         message: "Usuario no encontrado o inactivo" 
       });
     }
 
-    // Verificar contraseña usando el método del modelo
     const isMatch = await user.comparePassword(password);
-    console.log('Contraseña válida:', isMatch ? 'Sí' : 'No');
+    console.log("🔹 Comparación de contraseña:", isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ 
+        success: false,
         message: "Credenciales inválidas" 
       });
     }
 
-    // Generar token JWT
     const token = generateToken(user);
 
-    // Actualizar último login
-    await user.updateLastLogin();
+    user.lastLogin = new Date();
+    await user.save();
 
-    // Enviar respuesta
     res.json({
+      success: true,
       token,
       user: {
         id: user._id,
@@ -69,9 +69,10 @@ const login = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('❌ Error en login:', error);
     res.status(500).json({ 
-      message: "Error en el servidor", 
+      success: false,
+      message: "Error en el servidor",
       error: error.message 
     });
   }
@@ -81,14 +82,12 @@ const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Validar campos requeridos
     if (!name || !email || !password) {
       return res.status(400).json({ 
         message: "Todos los campos son requeridos" 
       });
     }
 
-    // Verificar si el usuario ya existe
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ 
@@ -96,20 +95,17 @@ const register = async (req, res) => {
       });
     }
 
-    // Crear nuevo usuario
     const user = new User({
       name,
       email: email.toLowerCase(),
       password,
-      role: role || 'empleado'
+      role: role || 'recepcionista'
     });
 
     await user.save();
 
-    // Generar token JWT
     const token = generateToken(user);
 
-    // Enviar respuesta
     res.status(201).json({
       token,
       user: {
@@ -128,7 +124,6 @@ const register = async (req, res) => {
   }
 };
 
-// Verificar token y obtener usuario actual
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
@@ -142,8 +137,29 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+const verifyToken = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ 
+      success: false,
+      message: "Token inválido" 
+    });
+  }
+};
+
 module.exports = {
   login,
   register,
-  getCurrentUser
+  getCurrentUser,
+  verifyToken
 };

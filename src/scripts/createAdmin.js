@@ -7,40 +7,36 @@ const createAdmin = async () => {
     await mongoose.connect(process.env.MONGO_URI);
     console.log('✅ MongoDB conectado');
 
-    // Datos del admin
+    // Datos del admin por defecto
     const adminData = {
-      name: 'Admin',
-      email: 'admin@test.com',
-      password: '123456',
+      name: 'Matias Admin',
+      email: 'matias@hoteldiva.com',
+      password: 'garay1630',
       role: 'admin',
       active: true
     };
 
-    // Limpiar usuarios existentes (opcional, solo para testing)
-    await User.deleteMany({});
-    console.log('🧹 Base de datos limpiada');
+    // Verificar si ya existe
+    const existingAdmin = await User.findOne({ email: adminData.email });
+    
+    if (existingAdmin) {
+      console.log('ℹ️ El usuario admin ya existe');
+      process.exit(0);
+    }
 
     // Crear nuevo admin
     const admin = new User(adminData);
     await admin.save();
     
-    // Verificar que se guardó correctamente
-    const savedAdmin = await User.findOne({ email: adminData.email });
-    if (savedAdmin) {
-      console.log('✅ Usuario admin creado exitosamente');
-      console.log('Datos del admin:', {
-        id: savedAdmin._id,
-        name: savedAdmin.name,
-        email: savedAdmin.email,
-        role: savedAdmin.role,
-        active: savedAdmin.active
-      });
-    } else {
-      console.log('❌ Error: El usuario no se guardó correctamente');
-    }
+    console.log('✅ Usuario admin creado exitosamente');
+    console.log('Datos del admin:', {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role
+    });
 
     process.exit(0);
-
   } catch (error) {
     console.error('❌ Error:', error);
     process.exit(1);

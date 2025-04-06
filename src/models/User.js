@@ -23,10 +23,10 @@ const UserSchema = new mongoose.Schema({
   role: { 
     type: String, 
     enum: {
-      values: ["admin", "recepcionista", "empleado"],
+      values: ["admin", "recepcionista", "limpieza", "servicio"],
       message: "Rol no válido"
     }, 
-    default: "empleado" 
+    default: "recepcionista" 
   },
   lastLogin: {
     type: Date
@@ -59,12 +59,6 @@ UserSchema.methods.comparePassword = async function(candidatePassword) {
   } catch (error) {
     throw error;
   }
-};
-
-// Método para actualizar último login
-UserSchema.methods.updateLastLogin = async function() {
-  this.lastLogin = new Date();
-  return this.save();
 };
 
 module.exports = mongoose.model("User", UserSchema);
