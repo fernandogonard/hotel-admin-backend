@@ -169,9 +169,29 @@ const filterReservations = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};const isRoomAvailable = async (roomId, checkIn, checkOut) => {
+  const overlappingReservation = await Reservation.findOne({
+    room: roomId,
+    $or: [
+      {
+        checkInDate: { $lt: checkOut },
+        checkOutDate: { $gt: checkIn }
+      }
+    ],
+    status: { $in: ['reservado', 'ocupado'] }
+  });
+  return !overlappingReservation;
 };
+// Crear un array de 30 días desde hoy
+const days = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() + i);
+  return date.toISOString().split('T')[0]; // formato YYYY-MM-DD
+});
+
 
 module.exports = {
+  isRoomAvailable,
   getReservations,
   createReservation,
   getReservationById,

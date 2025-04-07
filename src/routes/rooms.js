@@ -1,25 +1,14 @@
-// routes/rooms.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Room = require('../models/Room');
+const Room = require("../models/Room");
 
-// Ruta normal para obtener habitaciones
-router.get('/', async (req, res) => {
+// Obtener todas las habitaciones
+router.get("/", async (req, res) => {
   try {
-    const rooms = await Room.find(); // sin explain
+    const rooms = await Room.find();
     res.json(rooms);
-  } catch (err) {
-    res.status(500).json({ error: 'Error al obtener habitaciones' });
-  }
-});
-
-// Ruta especial para ver el explain()
-router.get('/explain', async (req, res) => {
-  try {
-    const resultado = await Room.find({}).explain("executionStats");
-    res.json(resultado);
-  } catch (err) {
-    res.status(500).json({ error: 'Error en explain()', detalle: err });
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener habitaciones", error });
   }
 });
 
