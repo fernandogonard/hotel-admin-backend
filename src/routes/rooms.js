@@ -1,14 +1,15 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const Room = require("../models/Room");
+const Room = require('../models/Room');
 
-// Obtener todas las habitaciones
-router.get("/", async (req, res) => {
+// GET /api/rooms - Obtener todas las habitaciones
+router.get('/', async (req, res) => {
   try {
     const rooms = await Room.find();
     res.json(rooms);
   } catch (error) {
-    res.status(500).json({ message: "Error al obtener habitaciones", error });
+    console.error("Error obteniendo habitaciones:", error);
+    res.status(500).json({ message: 'Error obteniendo habitaciones' });
   }
 });
 

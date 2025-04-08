@@ -1,19 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const reservationController = require('../controllers/reservationController');
-const auth = require('../middleware/auth');
+const Reservation = require('../models/Reservation');
 
-// Proteger todas las rutas
-router.use(auth.protect);
-
-// Rutas públicas (requieren autenticación)
-router.get('/', reservationController.getReservations);
-router.get('/:id', reservationController.getReservationById);
-router.get('/filter/search', reservationController.filterReservations);
-
-// Rutas que requieren roles específicos
-router.post('/', auth.authorize(['admin']), reservationController.createReservation);
-router.put('/:id', auth.authorize(['admin']), reservationController.updateReservation);
-router.delete('/:id', auth.authorize(['admin']), reservationController.deleteReservation);
+// GET /api/reservations - Obtener todas las reservas
+router.get('/', async (req, res) => {
+  try {
+    const reservations = await Reservation.find().populate('room');
+    res.json(reservations);
+  } catch (error) {
+    console.error("Error obteniendo reservas:", error);
+    res.status(500).json({ message: 'Error obteniendo reservas' });
+  }
+});
 
 module.exports = router;
