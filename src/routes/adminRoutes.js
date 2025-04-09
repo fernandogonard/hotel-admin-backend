@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { protect } = require('../middleware/auth');
 const { getStats, getActivities } = require('../controllers/adminController');
+const { verifyToken, verifyAdmin } = require('../middleware/authMiddleware');
 
-// Rutas protegidas de admin
-router.get('/stats', protect, getStats);
-router.get('/activities', protect, getActivities);
+// Rutas protegidas para administrador
+router.get('/stats', verifyToken, verifyAdmin, getStats);
+router.get('/activities', verifyToken, verifyAdmin, getActivities);
 
 module.exports = router;

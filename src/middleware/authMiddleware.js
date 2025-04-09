@@ -1,6 +1,8 @@
 // middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-module.exports = function (req, res, next) {
+
+// Verifica que el token sea válido
+const verifyToken = (req, res, next) => {
   const token = req.header('Authorization')?.split(' ')[1];
   if (!token) return res.status(401).json({ msg: 'Acceso denegado' });
 
@@ -11,4 +13,17 @@ module.exports = function (req, res, next) {
   } catch (err) {
     res.status(400).json({ msg: 'Token inválido' });
   }
+};
+
+// Verifica que el usuario tenga rol de administrador
+const verifyAdmin = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ msg: 'Acceso solo para administradores' });
+  }
+  next();
+};
+
+module.exports = {
+  verifyToken,
+  verifyAdmin,
 };

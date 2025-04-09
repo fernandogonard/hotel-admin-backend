@@ -11,6 +11,9 @@ const serviceRoutes = require("./src/routes/serviceRoutes");
 
 const app = express();
 
+
+
+
 // CORS
 const corsOptions = {
   origin: ["http://localhost:5173", "http://localhost:5174"],
