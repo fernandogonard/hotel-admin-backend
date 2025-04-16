@@ -1,3 +1,4 @@
+// routes/reservations.js
 import express from 'express';
 import {
   getAllReservations,
