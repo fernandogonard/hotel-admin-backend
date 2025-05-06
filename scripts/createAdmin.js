@@ -5,7 +5,7 @@ const User = require('../models/User');
 
 dotenv.config();
 mongoose.connect(process.env.MONGO_URI).then(async () => {
-  const hashed = await bcrypt.hash('admin123', 10);
+  const hashed = await bcrypt.hash('123456', 10);
 
   await User.create({
     name: 'Admin',

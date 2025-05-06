@@ -8,10 +8,10 @@ export const login = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ msg: 'Usuario no encontrado' });
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ msg: 'Contraseña incorrecta' });
+    if (!isMatch) return res.status(401).json({ message: 'Contraseña incorrecta' });
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -19,7 +19,8 @@ export const login = async (req, res) => {
       { expiresIn: '1d' }
     );
 
-    res.json({
+    res.status(200).json({
+      message: 'Inicio de sesión exitoso',
       token,
       user: {
         id: user._id,
@@ -29,6 +30,18 @@ export const login = async (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ msg: 'Error en el servidor' });
+    res.status(500).json({ message: 'Error en el servidor', error: err.message });
+  }
+};
+
+// Nuevo endpoint para obtener el usuario autenticado
+export const me = async (req, res) => {
+  try {
+    // req.user es agregado por el middleware protect
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: 'Error en el servidor', error: err.message });
   }
 };

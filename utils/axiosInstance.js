@@ -2,11 +2,12 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:2117/api/rooms'
+  baseURL: 'http://localhost:2117/api',
+  withCredentials: true, // Si usas cookies
 });
 
 axiosInstance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token'); // O donde almacenes el token
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

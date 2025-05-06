@@ -2,19 +2,30 @@
 import mongoose from 'mongoose';
 
 const reservationSchema = new mongoose.Schema({
-  firstName: String,
-  lastName: String,
-  email: String,
-  phone: String,
-  roomNumber: Number,
-  guests: Number,
-  checkIn: Date,
-  checkOut: Date,
-  status: {
-    type: String,
-    enum: ['reservado', 'ocupado', 'cancelado'],
-    default: 'reservado',
-  },
+  firstName: { type: String, required: true },
+  lastName:  { type: String, required: true },
+  phone:     { type: String },
+  email:     { type: String, required: true },
+  checkIn:   { type: Date, required: true },
+  checkOut:  { type: Date, required: true },
+  roomNumber: { type: Number, required: true },
+  guests:    { type: Number, required: true },
+  notes:     { type: String },
+  status:    { type: String, enum: ['reservado', 'ocupado', 'cancelado', 'completado'], default: 'reservado' }
 }, { timestamps: true });
 
-export default mongoose.model('Reservation', reservationSchema);
+// Índice para evitar reservas duplicadas en la misma habitación y fechas solapadas
+reservationSchema.index(
+  { roomNumber: 1, checkIn: 1, checkOut: 1 }
+);
+
+// Validación para garantizar que checkIn sea anterior a checkOut
+reservationSchema.pre('save', function (next) {
+  if (this.checkIn >= this.checkOut) {
+    return next(new Error('La fecha de entrada debe ser anterior a la de salida.'));
+  }
+  next();
+});
+
+const Reservation = mongoose.model('Reservation', reservationSchema);
+export default Reservation;
