@@ -1,6 +1,6 @@
 // routes/reservations.js
 import express from 'express';
-import { createReservation, getAllReservations, updateReservation, deleteReservation } from '../controllers/reservationController.js';
+import { createReservation, getAllReservations, updateReservation, deleteReservation, checkInReservation, checkOutReservation } from '../controllers/reservationController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validateReservation } from '../middleware/validators.js';
 
@@ -17,5 +17,11 @@ router.put('/:id', protect, validateReservation, updateReservation);
 
 // Ruta para eliminar una reserva
 router.delete('/:id', protect, deleteReservation);
+
+// Endpoint para check-in de reserva
+router.post('/:id/checkin', protect, checkInReservation);
+
+// Endpoint para check-out de reserva
+router.post('/:id/checkout', protect, checkOutReservation);
 
 export default router;

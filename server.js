@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/rooms.js';
 import reservationRoutes from './routes/reservations.js';
 import reportRoutes from './routes/reports.js';
+import guestRoutes from './routes/guests.js';
 import errorHandler from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/guests', guestRoutes);
 
 // Middleware para manejar errores globales
 app.use(errorHandler);

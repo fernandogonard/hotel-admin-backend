@@ -81,3 +81,39 @@ export const deleteReservation = async (req, res) => {
     res.status(500).json({ message: 'Error al eliminar la reserva', error });
   }
 };
+
+// Realiza el check-in de una reserva (cambia estado a 'ocupado')
+export const checkInReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id);
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+    if (reservation.status !== 'reservado') {
+      return res.status(400).json({ message: 'Solo se puede hacer check-in de reservas en estado "reservado".' });
+    }
+    reservation.status = 'ocupado';
+    await reservation.save();
+    res.status(200).json({ message: 'Check-in realizado', reservation });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al realizar check-in', error });
+  }
+};
+
+// Realiza el check-out de una reserva (cambia estado a 'completado')
+export const checkOutReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id);
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+    if (reservation.status !== 'ocupado') {
+      return res.status(400).json({ message: 'Solo se puede hacer check-out de reservas en estado "ocupado".' });
+    }
+    reservation.status = 'completado';
+    await reservation.save();
+    res.status(200).json({ message: 'Check-out realizado', reservation });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al realizar check-out', error });
+  }
+};
