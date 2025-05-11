@@ -61,7 +61,7 @@ export const deleteRoom = async (req, res) => {
 export const getAdminStats = async (req, res, next) => {
   try {
     const totalRooms = await Room.countDocuments();
-    const occupiedRooms = await Room.countDocuments({ status: 'ocupado' });
+    const occupiedRooms = await Room.countDocuments({ $or: [{ status: 'ocupado' }, { status: 'ocupada' }] });
     const availableRooms = await Room.countDocuments({ status: 'disponible' });
     const totalReservations = await Reservation.countDocuments();
 
