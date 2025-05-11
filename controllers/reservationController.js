@@ -1,6 +1,7 @@
 // controllers/reservationController.js
 import * as ReservationService from '../services/reservationService.js';
 import Reservation from '../models/Reservation.js';
+import Room from '../models/Room.js';
 
 export const getAllReservations = async (req, res) => {
   try {
@@ -42,6 +43,11 @@ export const createReservation = async (req, res) => {
     if (overlappingReservation) {
       return res.status(400).json({ message: 'Conflicto de fechas con otra reserva.' });
     }
+    // Cambiar estado de la habitación a 'reservada'
+    await Room.findOneAndUpdate(
+      { number: roomNumber },
+      { status: 'reservada' }
+    );
     const newReservation = await ReservationService.createReservation(req.body);
     res.status(201).json(newReservation);
   } catch (error) {
@@ -94,13 +100,18 @@ export const checkInReservation = async (req, res) => {
     }
     reservation.status = 'ocupado';
     await reservation.save();
+    // Cambiar estado de la habitación a 'ocupada'
+    await Room.findOneAndUpdate(
+      { number: reservation.roomNumber },
+      { status: 'ocupada' }
+    );
     res.status(200).json({ message: 'Check-in realizado', reservation });
   } catch (error) {
     res.status(500).json({ message: 'Error al realizar check-in', error });
   }
 };
 
-// Realiza el check-out de una reserva (cambia estado a 'completado')
+// Realiza el check-out de una reserva (cambia estado a 'limpieza')
 export const checkOutReservation = async (req, res) => {
   try {
     const reservation = await Reservation.findById(req.params.id);
@@ -112,6 +123,11 @@ export const checkOutReservation = async (req, res) => {
     }
     reservation.status = 'completado';
     await reservation.save();
+    // Cambiar estado de la habitación a 'limpieza'
+    await Room.findOneAndUpdate(
+      { number: reservation.roomNumber },
+      { status: 'limpieza' }
+    );
     res.status(200).json({ message: 'Check-out realizado', reservation });
   } catch (error) {
     res.status(500).json({ message: 'Error al realizar check-out', error });

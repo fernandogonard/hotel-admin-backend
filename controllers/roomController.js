@@ -75,3 +75,21 @@ export const getAdminStats = async (req, res, next) => {
     next(error);
   }
 };
+
+// Endpoint para marcar una habitación como disponible después de limpieza
+export const setRoomAvailable = async (req, res) => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) {
+      return res.status(404).json({ message: 'Habitación no encontrada' });
+    }
+    if (room.status !== 'limpieza') {
+      return res.status(400).json({ message: 'Solo se puede marcar como disponible una habitación en limpieza.' });
+    }
+    room.status = 'disponible';
+    await room.save();
+    res.status(200).json({ message: 'Habitación disponible', room });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar el estado de la habitación', error });
+  }
+};

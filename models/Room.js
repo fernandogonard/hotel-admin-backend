@@ -6,7 +6,11 @@ const roomSchema = new mongoose.Schema({
   type: { type: String, required: true },
   price: { type: Number, required: true },
   floor: { type: Number, required: true },
-  status: { type: String, enum: ['disponible', 'ocupado', 'fuera de servicio'], required: true },
+  status: {
+    type: String,
+    enum: ['disponible', 'reservada', 'ocupada', 'limpieza', 'mantenimiento', 'fuera de servicio'],
+    required: true
+  },
 });
 
 // Define el índice explícitamente
