@@ -1,7 +1,9 @@
 // controllers/reservationController.js
 import * as ReservationService from '../services/reservationService.js';
+import { ReservationService as EnhancedReservationService } from '../services/reservationService-enhanced.js';
 import Reservation from '../models/Reservation.js';
 import Room from '../models/Room.js';
+import logger from '../utils/logger.js';
 
 export const getAllReservations = async (req, res) => {
   try {
@@ -24,34 +26,39 @@ export const getReservationById = async (req, res) => {
   }
 };
 
-export const createReservation = async (req, res) => {
-  const { roomNumber, checkIn, checkOut } = req.body;
+export const createReservation = async (req, res, next) => {
   try {
-    if (new Date(checkIn) >= new Date(checkOut)) {
-      return res.status(400).json({ message: 'La fecha de entrada debe ser anterior a la de salida.' });
-    }
-    // Verificar solapamiento de reservas para la misma habitación
-    const overlappingReservation = await Reservation.findOne({
+    const { name, email, roomNumber, checkIn, checkOut, guests } = req.body;
+
+    // Usar la lógica mejorada de reservas
+    const reservation = await EnhancedReservationService.createReservation({
+      name,
+      email,
       roomNumber,
-      $or: [
-        {
-          checkIn: { $lt: checkOut },
-          checkOut: { $gt: checkIn }
-        }
-      ]
+      checkIn,
+      checkOut,
+      guests: guests || 1
     });
-    if (overlappingReservation) {
-      return res.status(400).json({ message: 'Conflicto de fechas con otra reserva.' });
+
+    logger.info('Reserva creada exitosamente', {
+      reservationId: reservation._id,
+      roomNumber,
+      checkIn,
+      checkOut,
+      user: req.user?.email || 'sistema'
+    });
+
+    res.status(201).json({ 
+      message: 'Reserva creada exitosamente.', 
+      reservation 
+    });
+  } catch (err) {
+    logger.error('Error al crear reserva', err);
+    // Si es un error de validación específico, devolver el mensaje apropiado
+    if (err.message.includes('no existe') || err.message.includes('no está disponible')) {
+      return res.status(400).json({ message: err.message });
     }
-    // Cambiar estado de la habitación a 'reservada'
-    await Room.findOneAndUpdate(
-      { number: roomNumber },
-      { status: 'reservada' }
-    );
-    const newReservation = await ReservationService.createReservation(req.body);
-    res.status(201).json(newReservation);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al crear la reserva', error });
+    next(err);
   }
 };
 
@@ -66,13 +73,33 @@ export const getReservations = async (req, res) => {
 
 export const updateReservation = async (req, res) => {
   try {
-    const updatedReservation = await Reservation.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updatedReservation) {
-      return res.status(404).json({ message: 'Reserva no encontrada' });
-    }
-    res.status(200).json(updatedReservation);
+    const { roomNumber, checkIn, checkOut, guests } = req.body;
+    
+    // Usar la lógica mejorada para actualizaciones
+    const reservation = await EnhancedReservationService.updateReservation(req.params.id, {
+      roomNumber,
+      checkIn,
+      checkOut,
+      guests,
+      ...req.body
+    });
+
+    logger.info('Reserva actualizada exitosamente', {
+      reservationId: req.params.id,
+      changes: req.body,
+      user: req.user?.email
+    });
+
+    res.status(200).json(reservation);
   } catch (error) {
-    res.status(500).json({ message: 'Error al actualizar la reserva', error });
+    logger.error('Error al actualizar la reserva', error);
+    if (error.message.includes('no encontrada') || error.message.includes('no existe')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('no está disponible') || error.message.includes('conflicto')) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Error al actualizar la reserva', error: error.message });
   }
 };
 
@@ -133,3 +160,39 @@ export const checkOutReservation = async (req, res) => {
     res.status(500).json({ message: 'Error al realizar check-out', error });
   }
 };
+
+export const cancelReservation = async (req, res) => {
+  try {
+    const reservation = await Reservation.findById(req.params.id);
+    if (!reservation) {
+      return res.status(404).json({ message: 'Reserva no encontrada' });
+    }
+    if (reservation.status === 'cancelado') {
+      return res.status(400).json({ message: 'La reserva ya está cancelada.' });
+    }
+    reservation.status = 'cancelado';
+    await reservation.save();
+    // Opcional: actualizar estado de la habitación si corresponde
+    res.status(200).json({ message: 'Reserva cancelada', reservation });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al cancelar la reserva', error });
+  }
+};
+
+// Obtener reservas activas por número de habitación
+export const getActiveReservationsByRoom = async (req, res) => {
+  try {
+    const roomNumber = Number(req.params.roomNumber);
+    // Activas: status reservado u ocupado y fechas actuales o futuras
+    const now = new Date();
+    const reservas = await Reservation.find({
+      roomNumber,
+      status: { $in: ['reservado', 'ocupado'] },
+      checkOut: { $gte: now }
+    }).sort({ checkIn: 1 });
+    res.status(200).json(reservas);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener reservas activas por habitación', error });
+  }
+};
+

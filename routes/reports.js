@@ -1,25 +1,21 @@
 import express from 'express';
+import { getGeneralReport, getOccupancyReport, getRevenueReport } from '../controllers/reportControllerWithFallback.js';
 import { getGeneralReports, getReservationReports, getRoomReports, exportReservationsExcel, exportRoomsExcel, exportGuestsExcel } from '../controllers/reportController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Ruta para informes generales
-router.get('/general', protect, adminOnly, getGeneralReports);
+// Nuevas rutas con fallback
+router.get('/general', protect, adminOnly, getGeneralReport);
+router.get('/occupancy', protect, adminOnly, getOccupancyReport);
+router.get('/revenue', protect, adminOnly, getRevenueReport);
 
-// Ruta para informes de reservas
+// Rutas originales (mantener por compatibilidad)
+router.get('/general-old', protect, adminOnly, getGeneralReports);
 router.get('/reservations', protect, adminOnly, getReservationReports);
-
-// Ruta para informes de habitaciones
 router.get('/rooms', protect, adminOnly, getRoomReports);
-
-// Ruta para exportar reservas en Excel
 router.get('/reservations/export', protect, adminOnly, exportReservationsExcel);
-
-// Ruta para exportar habitaciones en Excel
 router.get('/rooms/export', protect, adminOnly, exportRoomsExcel);
-
-// Ruta para exportar huéspedes en Excel
 router.get('/guests/export', protect, adminOnly, exportGuestsExcel);
 
 export default router;

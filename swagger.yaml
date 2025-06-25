@@ -1,0 +1,113 @@
+openapi: 3.0.0
+info:
+  title: Hotel Admin API
+  version: 1.0.0
+  description: API REST para gestión hotelera
+servers:
+  - url: https://TU_BACKEND_RENDER/api
+paths:
+  /auth/login:
+    post:
+      summary: Login de usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login exitoso
+  /users:
+    get:
+      summary: Listar usuarios (solo admin)
+      responses:
+        '200':
+          description: Lista de usuarios
+    post:
+      summary: Crear usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+                role:
+                  type: string
+                  enum: [admin, user]
+      responses:
+        '201':
+          description: Usuario creado
+        '400':
+          description: Error de validación
+
+  /rooms:
+    get:
+      summary: Obtener todas las habitaciones
+      responses:
+        '200':
+          description: Lista de habitaciones
+    post:
+      summary: Crear habitación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                number:
+                  type: integer
+                type:
+                  type: string
+                status:
+                  type: string
+                  enum: [disponible, ocupada, limpieza]
+      responses:
+        '201':
+          description: Habitación creada
+        '400':
+          description: Error de validación
+
+  /reservations:
+    post:
+      summary: Crear reserva
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                phone:
+                  type: string
+                roomNumber:
+                  type: integer
+                guests:
+                  type: integer
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Reserva creada
+        '400':
+          description: Error de validación
+# ...agrega aquí el resto de endpoints...

@@ -7,8 +7,6 @@ export const validateReservation = (req, res, next) => {
     lastName: Joi.string().required(),
     email: Joi.string().email().required(),
     phone: Joi.string().allow(''),
-    checkIn: Joi.date().required(),
-    checkOut: Joi.date().greater(Joi.ref('checkIn')).required(),
     roomNumber: Joi.number().required(),
     guests: Joi.number().min(1).required(),
     notes: Joi.string().allow(''),

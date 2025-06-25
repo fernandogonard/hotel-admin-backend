@@ -1,0 +1,2 @@
+{"timestamp":"2025-06-25T13:34:21.645Z","level":"ERROR","message":"Error en verificación de integración"}
+{"timestamp":"2025-06-25T13:35:29.019Z","level":"ERROR","message":"Error creando reserva","error":"La habitación 999 no existe","reservationData":{"name":"Test Usuario","email":"test@test.com","roomNumber":"999","checkIn":"2025-12-01T00:00:00.000Z","checkOut":"2025-12-03T00:00:00.000Z","guests":2}}

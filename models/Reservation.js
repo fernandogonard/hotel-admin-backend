@@ -14,10 +14,8 @@ const reservationSchema = new mongoose.Schema({
   status:    { type: String, enum: ['reservado', 'ocupado', 'cancelado', 'completado'], default: 'reservado' }
 }, { timestamps: true });
 
-// Índice para evitar reservas duplicadas en la misma habitación y fechas solapadas
-reservationSchema.index(
-  { roomNumber: 1, checkIn: 1, checkOut: 1 }
-);
+// Índice para acelerar búsquedas por habitación y fechas
+reservationSchema.index({ roomNumber: 1, checkIn: 1, checkOut: 1 });
 
 // Validación para garantizar que checkIn sea anterior a checkOut
 reservationSchema.pre('save', function (next) {
@@ -27,5 +25,7 @@ reservationSchema.pre('save', function (next) {
   next();
 });
 
-const Reservation = mongoose.model('Reservation', reservationSchema);
+const Reservation = mongoose.models.Reservation || mongoose.model('Reservation', reservationSchema);
+
 export default Reservation;
+

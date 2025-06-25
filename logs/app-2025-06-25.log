@@ -1,0 +1,48 @@
+{"timestamp":"2025-06-25T13:34:21.642Z","level":"INFO","message":"Test de logger - integración verificada"}
+{"timestamp":"2025-06-25T13:35:29.014Z","level":"INFO","message":"Test de logger - integración verificada"}
+{"timestamp":"2025-06-25T13:46:57.563Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T13:46:57.581Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T13:47:10.932Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T13:47:10.946Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T13:47:51.574Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T13:47:51.588Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T13:52:31.130Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T13:52:31.144Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T13:56:27.687Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T13:56:27.701Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:03:46.510Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:03:46.526Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:08:10.333Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:08:10.348Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:12:24.331Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:12:24.346Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:41:07.442Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:41:07.457Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:45:57.162Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:45:57.179Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T14:52:59.211Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T14:52:59.226Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:20:35.445Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:20:35.461Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:32:07.053Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:32:07.065Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:35:29.868Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:35:29.882Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:38:49.240Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:38:49.251Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:50:08.297Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:50:08.311Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T15:56:27.610Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T15:56:27.625Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:05:19.742Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:05:19.753Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:08:53.688Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:08:53.706Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:17:11.077Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:17:11.093Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:26:56.456Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:26:56.471Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:46:22.426Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:46:22.440Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T16:51:07.180Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T16:51:07.192Z","level":"INFO","message":"MongoDB conectado exitosamente"}

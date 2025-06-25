@@ -8,9 +8,12 @@ const roomSchema = new mongoose.Schema({
   floor: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['disponible', 'reservada', 'ocupada', 'limpieza', 'mantenimiento', 'fuera de servicio'],
+    enum: ['disponible', 'reservado', 'ocupado', 'limpieza', 'mantenimiento', 'fuera de servicio'],
     required: true
   },
+  capacity: { type: Number },
+  amenities: [{ type: String }],
+  images: [{ type: String }], // Nuevo campo opcional (URLs o paths)
 });
 
 // Define el índice explícitamente
