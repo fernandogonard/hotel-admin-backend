@@ -14,6 +14,7 @@ import reportRoutes from './routes/reports.js';
 import guestRoutes from './routes/guests.js';
 import userRoutes from './routes/users.js';
 import dashboardRoutes from './routes/dashboard.js';
+import cleaningRoutes from './routes/cleaning.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { validateSecurityConfig, securityConfig } from './config/security.js';
 import logger from './utils/logger.js';
@@ -125,6 +126,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/guests', guestRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/cleaning', cleaningRoutes);
 
 // Middleware CSRF: proteger rutas que usan cookies httpOnly
 if (process.env.NODE_ENV === 'production') {

@@ -1,6 +1,7 @@
 // middleware/validators.js - Validaciones unificadas con Joi
 import Joi from 'joi';
 import mongoose from 'mongoose';
+import Reservation from '../models/Reservation.js';
 
 // Esquemas de validación
 export const schemas = {
@@ -204,3 +205,25 @@ export const validateGuest = validate(schemas.guest);
 export const validateLogin = validate(schemas.login);
 export const validateUser = validate(schemas.user);
 export const validateAvailability = validateQuery(schemas.availability);
+
+// Middleware para evitar solapamientos de reservas en la misma habitación y fecha
+export const checkReservationOverlap = async (req, res, next) => {
+  try {
+    const { room, roomNumber, checkIn, checkOut } = req.body;
+    if (!room && !roomNumber) return res.status(400).json({ error: 'room o roomNumber requerido' });
+    if (!checkIn || !checkOut) return res.status(400).json({ error: 'checkIn y checkOut requeridos' });
+    // Permitir exclusión de la propia reserva en update
+    const excludeId = req.params.id || null;
+    // Buscar conflictos por room o roomNumber
+    const conflicts = await Reservation.findConflicts(room || roomNumber, new Date(checkIn), new Date(checkOut), excludeId);
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        error: 'La habitación ya está reservada en ese rango de fechas.',
+        conflicts
+      });
+    }
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: 'Error al verificar disponibilidad', details: err.message });
+  }
+};

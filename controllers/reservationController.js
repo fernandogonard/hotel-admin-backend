@@ -4,6 +4,7 @@ import { ReservationService as EnhancedReservationService } from '../services/re
 import Reservation from '../models/Reservation.js';
 import Room from '../models/Room.js';
 import logger from '../utils/logger.js';
+import { sendReservationConfirmation } from '../services/emailService.js';
 
 export const getAllReservations = async (req, res) => {
   try {
@@ -47,6 +48,13 @@ export const createReservation = async (req, res, next) => {
       checkOut,
       user: req.user?.email || 'sistema'
     });
+
+    // Enviar email de confirmación (no bloquear respuesta)
+    sendReservationConfirmation({
+      to: email,
+      name: name || reservation.firstName,
+      reservation
+    }).catch(e => logger.warn('No se pudo enviar email de confirmación', e));
 
     res.status(201).json({ 
       message: 'Reserva creada exitosamente.', 
