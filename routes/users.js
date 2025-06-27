@@ -1,27 +1,30 @@
+// routes/users.js - Rutas de gestión de usuarios
 import express from 'express';
-import { body } from 'express-validator';
-import * as userController from '../controllers/userController.js';
-import auth from '../middlewares/auth.js';
-import { validateUser } from '../middleware/validateUser.js';
+import {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  getProfile,
+  updateProfile,
+  toggleUserStatus
+} from '../controllers/userController.js';
+import { protect, adminOnly } from '../middleware/authMiddleware.js';
+import { validateUser, validateMongoId } from '../middleware/validators-unified.js';
 
 const router = express.Router();
 
-router.post(
-  '/',
-  validateUser,
-  userController.createUser
-);
+// Rutas del perfil del usuario autenticado
+router.get('/profile', protect(), getProfile);
+router.put('/profile', protect(), updateProfile);
 
-router.get(
-  '/me',
-  auth(), // cualquier usuario autenticado
-  userController.getProfile
-);
-
-router.get(
-  '/',
-  auth(['admin']), // solo admin
-  userController.getAllUsers
-);
+// Rutas de administración de usuarios (solo admin)
+router.get('/', protect(), adminOnly, getAllUsers);
+router.get('/:id', protect(), adminOnly, validateMongoId, getUserById);
+router.post('/', protect(), adminOnly, validateUser, createUser);
+router.put('/:id', protect(), adminOnly, validateMongoId, updateUser);
+router.delete('/:id', protect(), adminOnly, validateMongoId, deleteUser);
+router.patch('/:id/status', protect(), adminOnly, validateMongoId, toggleUserStatus);
 
 export default router;

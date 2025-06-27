@@ -46,3 +46,7 @@
 {"timestamp":"2025-06-25T16:46:22.440Z","level":"INFO","message":"MongoDB conectado exitosamente"}
 {"timestamp":"2025-06-25T16:51:07.180Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
 {"timestamp":"2025-06-25T16:51:07.192Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T18:19:04.519Z","level":"INFO","message":"Servidor iniciado en puerto 2117"}
+{"timestamp":"2025-06-25T18:19:04.535Z","level":"INFO","message":"MongoDB conectado exitosamente"}
+{"timestamp":"2025-06-25T20:50:15.086Z","level":"INFO","message":"Servidor iniciado en puerto 2117 con seguridad robusta"}
+{"timestamp":"2025-06-25T20:50:15.100Z","level":"INFO","message":"MongoDB conectado correctamente"}

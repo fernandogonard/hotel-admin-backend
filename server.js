@@ -1,101 +1,218 @@
-// server.js o index.js
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mongoSanitize from 'express-mongo-sanitize';
+import xssClean from 'xss-clean';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes.js';
 import roomRoutes from './routes/rooms.js';
 import reservationRoutes from './routes/reservations.js';
 import reportRoutes from './routes/reports.js';
 import guestRoutes from './routes/guests.js';
+import userRoutes from './routes/users.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { errorHandler } from './middleware/errorHandler.js';
-import { securityMiddleware } from './middleware/security.js';
+import { validateSecurityConfig, securityConfig } from './config/security.js';
 import logger from './utils/logger.js';
+import { csrfProtection, sendCsrfToken } from './middleware/csrf.js';
+import setupSwagger from './swagger.js';
+import * as Sentry from '@sentry/node';
 
 dotenv.config();
 
+// Validar configuración de seguridad al inicio
+try {
+  validateSecurityConfig();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
+
 const app = express();
 
-// Aplicar middlewares de seguridad
-app.use(securityMiddleware);
+// Inicializar Sentry solo si hay DSN
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV,
+    tracesSampleRate: 0.5,
+  });
+  app.use(Sentry.Handlers.requestHandler());
+}
 
-// 🔧 FIX CORS para desarrollo local con Vite + Express
-// Reemplazá toda configuración anterior de CORS por esta
-// Este bloque maneja correctamente preflight OPTIONS y orígenes múltiples
-// Asegura que funcione con localhost:5173, Postman, y futuros despliegues
-
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:3000'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 204
+// Función para conectar a MongoDB (sin fallback a datos locales)
+const connectToDatabase = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, { 
+      ...securityConfig.mongodb,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 5000 
+      // NO agregar bufferMaxEntries ni buffermaxentries aquí
+    });
+    // console.log('✅ Conectado a MongoDB'); // Usar logger.info en producción
+    logger.info('MongoDB conectado correctamente');
+  } catch (error) {
+    console.error('❌ Error conectando a MongoDB:', error.message);
+    logger.error('MongoDB connection failed', error);
+    process.exit(1); // Salir si no hay base de datos
+  }
 };
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // ⚠️ Imprescindible para solicitudes preflight
+// Middlewares de seguridad robustos
+app.use(helmet({
+  contentSecurityPolicy: process.env.NODE_ENV === 'production' ? securityConfig.csp : false,
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
 
-app.use(express.json());
-
-// 🔧 DEBUG: Middleware para loggear todas las peticiones
-app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url} - Body:`, req.body ? Object.keys(req.body) : 'empty');
-  next();
+// Rate limiting diferenciado
+const generalLimiter = rateLimit({
+  windowMs: securityConfig.rateLimit.windowMs,
+  max: securityConfig.rateLimit.max,
+  standardHeaders: securityConfig.rateLimit.standardHeaders,
+  legacyHeaders: securityConfig.rateLimit.legacyHeaders,
+  message: securityConfig.rateLimit.message
 });
 
-// Conexión a MongoDB (versión moderna sin opciones obsoletas)
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB conectado');
-    logger.info('MongoDB conectado exitosamente');
-  })
-  .catch((err) => {
-    console.error('❌ Error al conectar MongoDB:', err.message);
-    logger.error('Error al conectar MongoDB', err);
-    process.exit(1);
-  });
+const authLimiter = rateLimit({
+  windowMs: securityConfig.rateLimit.auth.windowMs,
+  max: securityConfig.rateLimit.auth.max,
+  skipSuccessfulRequests: securityConfig.rateLimit.auth.skipSuccessfulRequests,
+  message: {
+    error: 'Demasiados intentos de login',
+    retryAfter: 'Intenta nuevamente en 15 minutos'
+  }
+});
 
-app.use('/api/auth', authRoutes);
+app.use(generalLimiter);
+
+// Sanitización contra NoSQL injection
+app.use(mongoSanitize());
+
+// ⚠️ Mejorado para producción: Protección XSS
+app.use(xssClean());
+
+// Parser de cookies para JWT seguro
+app.use(cookieParser(process.env.SESSION_SECRET));
+
+// CORS configurado de forma segura
+app.use(cors(securityConfig.cors));
+app.options('*', cors(securityConfig.cors));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging de requests (solo en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  app.use(logger.middleware());
+}
+
+// Conexión a MongoDB
+connectToDatabase();
+
+// Rutas de la API con rate limiting específico
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/reservations', reservationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/guests', guestRoutes);
+app.use('/api/users', userRoutes);
 
-// Ruta raíz para evitar warning "Cannot GET /"
+// Middleware CSRF: proteger rutas que usan cookies httpOnly
+if (process.env.NODE_ENV === 'production') {
+  app.use(csrfProtection);
+  app.get('/api/csrf-token', sendCsrfToken); // Ruta para obtener el token CSRF
+}
+
+// Integración de Swagger (documentación de la API)
+setupSwagger(app);
+
+// Ruta raíz
 app.get('/', (req, res) => {
-  res.status(200).send('API Hotel Admin corriendo');
-});
-
-// Ruta para favicon.ico (opcional, evita warning de favicon)
-app.get('/favicon.ico', (req, res) => res.sendStatus(204));
-
-// Ruta de prueba para verificar conectividad
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Servidor funcionando correctamente', 
-    timestamp: new Date().toISOString(),
-    cors: 'enabled'
+  res.status(200).json({ 
+    message: 'API Hotel Admin corriendo',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV,
+    security: '✅ Configuración robusta aplicada'
   });
 });
+
+// Health check mejorado
+app.get('/api/health', async (req, res) => {
+  try {
+    // Verificar conexión a MongoDB
+    const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
+    
+    res.status(200).json({ 
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      database: `MongoDB ${dbStatus}`,
+      environment: process.env.NODE_ENV,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      security: {
+        helmet: '✅',
+        rateLimit: '✅',
+        mongoSanitize: '✅',
+        cors: '✅'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Error interno'
+    });
+  }
+});
+
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'ok', message: 'Servidor real funcionando', timestamp: new Date().toISOString() });
+});
+
+// Middleware de errores Sentry (debe ir después de las rutas)
+if (process.env.SENTRY_DSN) {
+  app.use(Sentry.Handlers.errorHandler());
+}
 
 // Middleware para manejar errores globales
 app.use(errorHandler);
 
+// Manejo de rutas no encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Ruta no encontrada',
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
 const PORT = process.env.PORT || 2117;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  logger.info(`Servidor iniciado en puerto ${PORT}`);
+  // console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`); // Usar logger.info
+  // console.log(`🔒 Seguridad: Configuración robusta aplicada`); // Usar logger.info
+  // console.log(`🌍 CORS: ${process.env.FRONTEND_URL}, ${process.env.FRONTEND_ADMIN_URL}`); // Usar logger.info
+  logger.info(`Servidor iniciado en puerto ${PORT} con seguridad robusta`);
+});
+
+// Manejo de errores no capturados
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  logger.error('Uncaught Exception', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection', { reason, promise });
+  process.exit(1);
 });

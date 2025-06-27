@@ -2,27 +2,35 @@
 import * as RoomService from '../services/roomService.js';
 import Room from '../models/Room.js';
 import Reservation from '../models/Reservation.js';
+import { asyncHandler, sendResponse, sendError } from '../utils/asyncHandler.js';
 
-export const getAllRooms = async (req, res) => {
+export const getAllRooms = asyncHandler(async (req, res) => {
+  console.log('Entrando a getAllRooms');
+  let timeoutId;
   try {
-    const rooms = await RoomService.getAllRooms();
-    res.status(200).json(rooms);
-  } catch (error) {
-    res.status(500).json({ message: 'Error al obtener habitaciones', error });
-  }
-};
+    // Timeout de seguridad: responde si la consulta tarda más de 5 segundos
+    timeoutId = setTimeout(() => {
+      console.error('Timeout en getAllRooms: la consulta tardó demasiado');
+      if (!res.headersSent) {
+        res.status(504).json({ message: 'Timeout: la consulta de habitaciones tardó demasiado' });
+      }
+    }, 5000);
 
-export const getRoomById = async (req, res) => {
-  try {
-    const room = await RoomService.getRoomById(req.params.id);
-    if (!room) {
-      return res.status(404).json({ message: 'Habitación no encontrada' });
-    }
-    res.status(200).json(room);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const result = await RoomService.getAllRooms(page, limit);
+    clearTimeout(timeoutId);
+    sendResponse(res, 200, result, 'Habitaciones obtenidas exitosamente');
   } catch (error) {
-    res.status(500).json({ message: 'Error al obtener la habitación', error });
+    clearTimeout(timeoutId);
+    sendError(res, error);
   }
-};
+});
+
+export const getRoomById = asyncHandler(async (req, res) => {
+  const room = await RoomService.getRoomById(req.params.id);
+  sendResponse(res, 200, { room }, 'Habitación encontrada');
+});
 
 export const createRoom = async (req, res) => {
   try {
@@ -61,7 +69,7 @@ export const deleteRoom = async (req, res) => {
 export const getAdminStats = async (req, res, next) => {
   try {
     const totalRooms = await Room.countDocuments();
-    const occupiedRooms = await Room.countDocuments({ $or: [{ status: 'ocupado' }, { status: 'ocupada' }] });
+    const occupiedRooms = await Room.countDocuments({ status: 'ocupada' }); // Unificado a 'ocupada'
     const availableRooms = await Room.countDocuments({ status: 'disponible' });
     const totalReservations = await Reservation.countDocuments();
 

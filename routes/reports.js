@@ -1,14 +1,13 @@
 import express from 'express';
-import { getGeneralReport, getOccupancyReport, getRevenueReport } from '../controllers/reportControllerWithFallback.js';
 import { getGeneralReports, getReservationReports, getRoomReports, exportReservationsExcel, exportRoomsExcel, exportGuestsExcel } from '../controllers/reportController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Nuevas rutas con fallback
-router.get('/general', protect, adminOnly, getGeneralReport);
-router.get('/occupancy', protect, adminOnly, getOccupancyReport);
-router.get('/revenue', protect, adminOnly, getRevenueReport);
+// Rutas de reportes usando MongoDB exclusivamente
+router.get('/general', protect, adminOnly, getGeneralReports);
+router.get('/occupancy', protect, adminOnly, getRoomReports);
+router.get('/revenue', protect, adminOnly, getReservationReports);
 
 // Rutas originales (mantener por compatibilidad)
 router.get('/general-old', protect, adminOnly, getGeneralReports);

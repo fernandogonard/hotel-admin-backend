@@ -1,0 +1,17 @@
+# Archivos y carpetas a ignorar en producción
+.env
+.env.*
+node_modules/
+logs/
+.vscode/
+.DS_Store
+*.log
+*.local
+# Archivos temporales y de sistema
+*.swp
+*.swo
+*.bak
+# Archivos de diagnóstico y legacy
+/tools/
+/__deprecated__/
+/package-lock.json.backup

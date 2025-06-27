@@ -196,3 +196,140 @@ export const getActiveReservationsByRoom = async (req, res) => {
   }
 };
 
+export const createPublicReservation = async (req, res) => {
+  try {
+    const { firstName, lastName, email, phone, checkIn, checkOut, roomNumber, guests, notes } = req.body;
+    
+    // Validaciones adicionales para reservas públicas
+    if (!firstName || !lastName || !email || !checkIn || !checkOut || !roomNumber) {
+      return res.status(400).json({ 
+        message: 'Todos los campos obligatorios deben estar completos',
+        required: ['firstName', 'lastName', 'email', 'checkIn', 'checkOut', 'roomNumber']
+      });
+    }
+
+    // Verificar que la habitación existe y está disponible
+    const room = await Room.findOne({ number: roomNumber });
+    if (!room) {
+      return res.status(404).json({ message: 'La habitación solicitada no existe' });
+    }
+
+    if (room.status !== 'disponible') {
+      return res.status(400).json({ message: 'La habitación no está disponible' });
+    }
+
+    // Verificar disponibilidad en las fechas solicitadas
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+    
+    if (startDate >= endDate) {
+      return res.status(400).json({ message: 'La fecha de entrada debe ser anterior a la fecha de salida' });
+    }
+
+    if (startDate < new Date()) {
+      return res.status(400).json({ message: 'La fecha de entrada no puede ser en el pasado' });
+    }
+
+    // Verificar conflictos con otras reservas
+    const conflictingReservation = await Reservation.findOne({
+      roomNumber,
+      status: { $in: ['reservado', 'ocupado'] },
+      $or: [
+        { checkIn: { $lt: endDate, $gte: startDate } },
+        { checkOut: { $lte: endDate, $gt: startDate } },
+        { checkIn: { $lte: startDate }, checkOut: { $gte: endDate } }
+      ]
+    });
+
+    if (conflictingReservation) {
+      return res.status(400).json({ 
+        message: 'La habitación no está disponible en las fechas seleccionadas',
+        conflict: true
+      });
+    }
+
+    // Crear la reserva
+    const newReservation = new Reservation({
+      firstName,
+      lastName,
+      email,
+      phone: phone || '',
+      checkIn: startDate,
+      checkOut: endDate,
+      roomNumber,
+      guests: guests || 1,
+      notes: notes || '',
+      status: 'reservado'
+    });
+
+    await newReservation.save();
+
+    // Actualizar estado de la habitación a reservado
+    await Room.findOneAndUpdate(
+      { number: roomNumber },
+      { status: 'reservado' }
+    );
+
+    logger.info('Reserva pública creada exitosamente', {
+      reservationId: newReservation._id,
+      email,
+      roomNumber,
+      checkIn,
+      checkOut
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Reserva creada exitosamente',
+      reservation: {
+        id: newReservation._id,
+        firstName,
+        lastName,
+        email,
+        roomNumber,
+        checkIn: startDate,
+        checkOut: endDate,
+        status: 'reservado'
+      }
+    });
+
+  } catch (error) {
+    logger.error('Error al crear reserva pública', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error interno del servidor. Por favor, inténtelo de nuevo.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+export const getMyReservations = async (req, res) => {
+  try {
+    const userEmail = req.user?.email;
+    if (!userEmail) {
+      return res.status(401).json({ message: 'No autenticado' });
+    }
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const skip = (page - 1) * limit;
+    const total = await Reservation.countDocuments({ email: userEmail });
+    const reservations = await Reservation.find({ email: userEmail })
+      .sort({ checkIn: -1 })
+      .skip(skip)
+      .limit(limit);
+    res.status(200).json({
+      reservations,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener tu historial de reservas', error });
+  }
+};
+

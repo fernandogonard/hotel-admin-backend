@@ -1,5 +1,6 @@
 // middleware/validators.js - Validaciones unificadas con Joi
 import Joi from 'joi';
+import mongoose from 'mongoose';
 
 // Esquemas de validación
 export const schemas = {
@@ -114,6 +115,19 @@ export const schemas = {
     maxPrice: Joi.number().positive().greater(Joi.ref('minPrice')).optional(),
     floor: Joi.number().integer().min(1).optional(),
     capacity: Joi.number().integer().min(1).optional()
+  }),
+
+  // Validación de cambio de contraseña
+  changePassword: Joi.object({
+    currentPassword: Joi.string().min(6).required().messages({
+      'string.empty': 'La contraseña actual es requerida'
+    }),
+    newPassword: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/).required().messages({
+      'string.pattern.base': 'La nueva contraseña debe contener al menos: 1 minúscula, 1 mayúscula, 1 número y 1 símbolo'
+    }),
+    confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
+      'any.only': 'Las contraseñas no coinciden'
+    })
   })
 };
 
@@ -166,6 +180,21 @@ export const validateQuery = (schema) => {
     req.query = value;
     next();
   };
+};
+
+// Validador específico para MongoDB ObjectId
+export const validateMongoId = (req, res, next) => {
+  const { id } = req.params;
+  
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID de MongoDB inválido',
+      code: 'INVALID_OBJECT_ID'
+    });
+  }
+  
+  next();
 };
 
 // Middleware específicos

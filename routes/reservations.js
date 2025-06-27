@@ -1,6 +1,6 @@
 // routes/reservations.js
 import express from 'express';
-import { createReservation, getAllReservations, updateReservation, deleteReservation, checkInReservation, checkOutReservation, cancelReservation, getActiveReservationsByRoom } from '../controllers/reservationController.js';
+import { createReservation, getAllReservations, updateReservation, deleteReservation, createPublicReservation, checkInReservation, checkOutReservation, cancelReservation, getActiveReservationsByRoom } from '../controllers/reservationController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validateReservation } from '../middleware/validators-unified.js';
 
@@ -9,8 +9,8 @@ const router = express.Router();
 // Ruta para crear una reserva
 router.post('/', protect, validateReservation, createReservation);
 
-// Ruta pública para reservas desde la web (sin JWT)
-router.post('/public', validateReservation, createReservation);
+// Ruta pública para reservas desde la web (sin JWT) - usar controlador específico
+router.post('/public', createPublicReservation);
 
 // Ruta para obtener todas las reservas
 router.get('/', protect, getAllReservations);
@@ -32,5 +32,13 @@ router.put('/:id/cancel', protect, cancelReservation);
 
 // Obtener reservas activas por habitación
 router.get('/active-by-room/:roomNumber', protect, getActiveReservationsByRoom);
+
+// Obtener reservas del usuario autenticado
+router.get('/my', protect, (req, res) => {
+  // El controlador se implementará en reservationController.js
+  import('../controllers/reservationController.js').then(module => {
+    module.getMyReservations(req, res);
+  });
+});
 
 export default router;

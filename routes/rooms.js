@@ -1,6 +1,6 @@
 // routes/rooms.js
 import express from 'express';
-import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, getAdminStats, setRoomAvailable } from '../controllers/roomControllerWithFallback.js';
+import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, getAdminStats, setRoomAvailable } from '../controllers/roomController.js';
 import { protect, adminOnly } from '../middleware/authMiddleware.js';
 import { validateRoom } from '../middleware/validators-unified.js';
 import Reservation from '../models/Reservation.js';
