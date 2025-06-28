@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import { assignCleaningTask, getCleaningTasks, updateCleaningTaskStatus } from '../controllers/cleaningController.js';
+import { protect } from '../middleware/authMiddleware.js';
+import { validateAssignCleaningTask } from '../middleware/expressValidators.js';
+
 const router = express.Router();
-const cleaningController = require('../controllers/cleaningController');
-const { protect, adminOnly, receptionistOnly } = require('../middleware/authMiddleware');
-const { validateAssignCleaningTask } = require('../middleware/expressValidators');
 
 // Asignar tarea de limpieza (solo admin o recepcionista)
 router.post('/assign', protect, (req, res, next) => {
@@ -11,12 +12,12 @@ router.post('/assign', protect, (req, res, next) => {
     return res.status(403).json({ message: 'No autorizado' });
   }
   next();
-}, validateAssignCleaningTask, cleaningController.assignCleaningTask);
+}, validateAssignCleaningTask, assignCleaningTask);
 
 // Listar tareas de limpieza (admin, recepcionista, cleaning)
-router.get('/', protect, cleaningController.getCleaningTasks);
+router.get('/', protect, getCleaningTasks);
 
 // Actualizar estado de tarea (solo cleaning o admin)
-router.patch('/:id/status', protect, cleaningController.updateCleaningTaskStatus);
+router.patch('/:id/status', protect, updateCleaningTaskStatus);
 
-module.exports = router;
+export default router;

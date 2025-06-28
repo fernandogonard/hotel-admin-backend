@@ -129,6 +129,24 @@ export const schemas = {
     confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required().messages({
       'any.only': 'Las contraseñas no coinciden'
     })
+  }),
+
+  // Validación de reservas múltiples
+  multiReservation: Joi.object({
+    firstName: Joi.string().min(2).max(50).required(),
+    lastName: Joi.string().min(2).max(50).required(),
+    email: Joi.string().email().required(),
+    phone: Joi.string().pattern(/^[\+]?[0-9\s\-\(\)]{10,20}$/).optional().allow(''),
+    checkIn: Joi.date().iso().min('now').required(),
+    checkOut: Joi.date().iso().greater(Joi.ref('checkIn')).required(),
+    roomNumbers: Joi.array().items(Joi.number().integer().min(1).max(9999)).min(1).required().messages({
+      'array.base': 'Debe seleccionar al menos una habitación',
+      'array.min': 'Debe seleccionar al menos una habitación',
+      'number.base': 'Número de habitación inválido',
+      'number.min': 'Número de habitación debe ser mayor a 0'
+    }),
+    guests: Joi.number().integer().min(1).max(10).required(),
+    notes: Joi.string().max(500).optional().allow('')
   })
 };
 
@@ -205,6 +223,7 @@ export const validateGuest = validate(schemas.guest);
 export const validateLogin = validate(schemas.login);
 export const validateUser = validate(schemas.user);
 export const validateAvailability = validateQuery(schemas.availability);
+export const validateMultiReservation = validate(schemas.multiReservation);
 
 // Middleware para evitar solapamientos de reservas en la misma habitación y fecha
 export const checkReservationOverlap = async (req, res, next) => {

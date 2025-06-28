@@ -1,7 +1,7 @@
-const { body, validationResult } = require('express-validator');
+import { body, validationResult } from 'express-validator';
 
 // Validador para asignar tarea de limpieza
-const validateAssignCleaningTask = [
+export const validateAssignCleaningTask = [
   body('roomId').isMongoId().withMessage('roomId inválido'),
   body('userId').isMongoId().withMessage('userId inválido'),
   body('scheduledFor').isISO8601().withMessage('Fecha programada inválida'),
@@ -14,7 +14,3 @@ const validateAssignCleaningTask = [
     next();
   }
 ];
-
-module.exports = {
-  validateAssignCleaningTask
-};

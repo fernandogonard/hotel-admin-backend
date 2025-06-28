@@ -1,9 +1,9 @@
-const CleaningTask = require('../models/CleaningTask');
-const User = require('../models/User');
-const Room = require('../models/Room');
+import CleaningTask from '../models/CleaningTask.js';
+import User from '../models/User.js';
+import Room from '../models/Room.js';
 
 // Asignar tarea de limpieza a un usuario para una habitación
-exports.assignCleaningTask = async (req, res) => {
+export async function assignCleaningTask(req, res) {
   try {
     const { roomId, userId, scheduledFor, notes } = req.body;
     // Validar existencia de usuario y habitación
@@ -26,10 +26,10 @@ exports.assignCleaningTask = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al asignar tarea', error: error.message });
   }
-};
+}
 
 // Listar tareas de limpieza (opcional: por usuario, por estado)
-exports.getCleaningTasks = async (req, res) => {
+export async function getCleaningTasks(req, res) {
   try {
     const { assignedTo, status } = req.query;
     const filter = {};
@@ -40,10 +40,10 @@ exports.getCleaningTasks = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener tareas', error: error.message });
   }
-};
+}
 
 // Actualizar estado de tarea (completar, en progreso, etc.)
-exports.updateCleaningTaskStatus = async (req, res) => {
+export async function updateCleaningTaskStatus(req, res) {
   try {
     const { id } = req.params;
     const { status, completedAt } = req.body;
@@ -57,4 +57,4 @@ exports.updateCleaningTaskStatus = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error al actualizar tarea', error: error.message });
   }
-};
+}

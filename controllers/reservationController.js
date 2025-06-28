@@ -29,40 +29,91 @@ export const getReservationById = async (req, res) => {
 
 export const createReservation = async (req, res, next) => {
   try {
-    const { name, email, roomNumber, checkIn, checkOut, guests } = req.body;
-
-    // Usar la lógica mejorada de reservas
-    const reservation = await EnhancedReservationService.createReservation({
-      name,
+    const { name, email, roomNumbers, checkIn, checkOut, guests } = req.body;
+    if (!name || !email || !checkIn || !checkOut || !roomNumbers || !Array.isArray(roomNumbers) || roomNumbers.length === 0) {
+      return res.status(400).json({
+        message: 'Todos los campos obligatorios deben estar completos',
+        required: ['name', 'email', 'checkIn', 'checkOut', 'roomNumbers']
+      });
+    }
+    const startDate = new Date(checkIn);
+    const endDate = new Date(checkOut);
+    if (startDate >= endDate) {
+      return res.status(400).json({ message: 'La fecha de entrada debe ser anterior a la de salida' });
+    }
+    if (startDate < new Date()) {
+      return res.status(400).json({ message: 'La fecha de entrada no puede ser en el pasado' });
+    }
+    const createdReservations = [];
+    for (const roomNumber of roomNumbers) {
+      // Verificar que la habitación existe y está disponible
+      const room = await Room.findOne({ number: roomNumber });
+      if (!room) {
+        return res.status(404).json({ message: `La habitación ${roomNumber} no existe` });
+      }
+      if (room.status !== 'disponible') {
+        return res.status(400).json({ message: `La habitación ${roomNumber} no está disponible` });
+      }
+      // Verificar conflictos con otras reservas
+      const conflictingReservation = await Reservation.findOne({
+        roomNumber,
+        status: { $in: ['reservado', 'ocupado'] },
+        $or: [
+          { checkIn: { $lt: endDate, $gte: startDate } },
+          { checkOut: { $lte: endDate, $gt: startDate } },
+          { checkIn: { $lte: startDate }, checkOut: { $gte: endDate } }
+        ]
+      });
+      if (conflictingReservation) {
+        return res.status(400).json({ message: `La habitación ${roomNumber} no está disponible en las fechas seleccionadas`, conflict: true });
+      }
+      // Crear la reserva
+      const newReservation = new Reservation({
+        firstName: name.split(' ')[0] || name,
+        lastName: name.split(' ').slice(1).join(' ') || '',
+        email,
+        checkIn: startDate,
+        checkOut: endDate,
+        roomNumber,
+        guests: guests || 1,
+        status: 'reservado'
+      });
+      await newReservation.save();
+      await Room.findOneAndUpdate({ number: roomNumber }, { status: 'reservado' });
+      createdReservations.push(newReservation);
+      // Enviar email de confirmación por cada reserva
+      sendReservationConfirmation({
+        to: email,
+        name,
+        reservation: {
+          roomNumber,
+          checkIn: startDate,
+          checkOut: endDate,
+          guests: guests || 1
+        }
+      }).catch(e => logger.warn('No se pudo enviar email de confirmación', e));
+    }
+    logger.info('Reservas múltiples creadas', {
       email,
-      roomNumber,
-      checkIn,
-      checkOut,
-      guests: guests || 1
-    });
-
-    logger.info('Reserva creada exitosamente', {
-      reservationId: reservation._id,
-      roomNumber,
+      roomNumbers,
       checkIn,
       checkOut,
       user: req.user?.email || 'sistema'
     });
-
-    // Enviar email de confirmación (no bloquear respuesta)
-    sendReservationConfirmation({
-      to: email,
-      name: name || reservation.firstName,
-      reservation
-    }).catch(e => logger.warn('No se pudo enviar email de confirmación', e));
-
-    res.status(201).json({ 
-      message: 'Reserva creada exitosamente.', 
-      reservation 
+    res.status(201).json({
+      message: 'Reservas creadas exitosamente.',
+      reservations: createdReservations.map(r => ({
+        id: r._id,
+        name,
+        email,
+        roomNumber: r.roomNumber,
+        checkIn: r.checkIn,
+        checkOut: r.checkOut,
+        status: r.status
+      }))
     });
   } catch (err) {
-    logger.error('Error al crear reserva', err);
-    // Si es un error de validación específico, devolver el mensaje apropiado
+    logger.error('Error al crear reservas múltiples', err);
     if (err.message.includes('no existe') || err.message.includes('no está disponible')) {
       return res.status(400).json({ message: err.message });
     }
@@ -206,104 +257,95 @@ export const getActiveReservationsByRoom = async (req, res) => {
 
 export const createPublicReservation = async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, checkIn, checkOut, roomNumber, guests, notes } = req.body;
-    
-    // Validaciones adicionales para reservas públicas
-    if (!firstName || !lastName || !email || !checkIn || !checkOut || !roomNumber) {
-      return res.status(400).json({ 
+    const { firstName, lastName, email, phone, checkIn, checkOut, roomNumbers, guests, notes } = req.body;
+    if (!firstName || !lastName || !email || !checkIn || !checkOut || !roomNumbers || !Array.isArray(roomNumbers) || roomNumbers.length === 0) {
+      return res.status(400).json({
         message: 'Todos los campos obligatorios deben estar completos',
-        required: ['firstName', 'lastName', 'email', 'checkIn', 'checkOut', 'roomNumber']
+        required: ['firstName', 'lastName', 'email', 'checkIn', 'checkOut', 'roomNumbers']
       });
     }
-
-    // Verificar que la habitación existe y está disponible
-    const room = await Room.findOne({ number: roomNumber });
-    if (!room) {
-      return res.status(404).json({ message: 'La habitación solicitada no existe' });
-    }
-
-    if (room.status !== 'disponible') {
-      return res.status(400).json({ message: 'La habitación no está disponible' });
-    }
-
-    // Verificar disponibilidad en las fechas solicitadas
     const startDate = new Date(checkIn);
     const endDate = new Date(checkOut);
-    
     if (startDate >= endDate) {
-      return res.status(400).json({ message: 'La fecha de entrada debe ser anterior a la fecha de salida' });
+      return res.status(400).json({ message: 'La fecha de entrada debe ser anterior a la de salida' });
     }
-
     if (startDate < new Date()) {
       return res.status(400).json({ message: 'La fecha de entrada no puede ser en el pasado' });
     }
-
-    // Verificar conflictos con otras reservas
-    const conflictingReservation = await Reservation.findOne({
-      roomNumber,
-      status: { $in: ['reservado', 'ocupado'] },
-      $or: [
-        { checkIn: { $lt: endDate, $gte: startDate } },
-        { checkOut: { $lte: endDate, $gt: startDate } },
-        { checkIn: { $lte: startDate }, checkOut: { $gte: endDate } }
-      ]
-    });
-
-    if (conflictingReservation) {
-      return res.status(400).json({ 
-        message: 'La habitación no está disponible en las fechas seleccionadas',
-        conflict: true
+    const createdReservations = [];
+    for (const roomNumber of roomNumbers) {
+      // Verificar que la habitación existe y está disponible
+      const room = await Room.findOne({ number: roomNumber });
+      if (!room) {
+        return res.status(404).json({ message: `La habitación ${roomNumber} no existe` });
+      }
+      if (room.status !== 'disponible') {
+        return res.status(400).json({ message: `La habitación ${roomNumber} no está disponible` });
+      }
+      // Verificar conflictos con otras reservas
+      const conflictingReservation = await Reservation.findOne({
+        roomNumber,
+        status: { $in: ['reservado', 'ocupado'] },
+        $or: [
+          { checkIn: { $lt: endDate, $gte: startDate } },
+          { checkOut: { $lte: endDate, $gt: startDate } },
+          { checkIn: { $lte: startDate }, checkOut: { $gte: endDate } }
+        ]
       });
-    }
-
-    // Crear la reserva
-    const newReservation = new Reservation({
-      firstName,
-      lastName,
-      email,
-      phone: phone || '',
-      checkIn: startDate,
-      checkOut: endDate,
-      roomNumber,
-      guests: guests || 1,
-      notes: notes || '',
-      status: 'reservado'
-    });
-
-    await newReservation.save();
-
-    // Actualizar estado de la habitación a reservado
-    await Room.findOneAndUpdate(
-      { number: roomNumber },
-      { status: 'reservado' }
-    );
-
-    logger.info('Reserva pública creada exitosamente', {
-      reservationId: newReservation._id,
-      email,
-      roomNumber,
-      checkIn,
-      checkOut
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Reserva creada exitosamente',
-      reservation: {
-        id: newReservation._id,
+      if (conflictingReservation) {
+        return res.status(400).json({ message: `La habitación ${roomNumber} no está disponible en las fechas seleccionadas`, conflict: true });
+      }
+      // Crear la reserva
+      const newReservation = new Reservation({
         firstName,
         lastName,
         email,
-        roomNumber,
+        phone: phone || '',
         checkIn: startDate,
         checkOut: endDate,
+        roomNumber,
+        guests: guests || 1,
+        notes: notes || '',
         status: 'reservado'
-      }
+      });
+      await newReservation.save();
+      await Room.findOneAndUpdate({ number: roomNumber }, { status: 'reservado' });
+      createdReservations.push(newReservation);
+      // Enviar email de confirmación por cada reserva
+      sendReservationConfirmation({
+        to: email,
+        name: `${firstName} ${lastName}`,
+        reservation: {
+          roomNumber,
+          checkIn: startDate,
+          checkOut: endDate,
+          guests: guests || 1
+        }
+      }).catch(e => logger.warn('No se pudo enviar email de confirmación (público)', e));
+    }
+    logger.info('Reservas públicas múltiples creadas', {
+      email,
+      roomNumbers,
+      checkIn,
+      checkOut
     });
-
+    res.status(201).json({
+      success: true,
+      message: 'Reservas creadas exitosamente',
+      reservations: createdReservations.map(r => ({
+        id: r._id,
+        firstName,
+        lastName,
+        email,
+        roomNumber: r.roomNumber,
+        checkIn: r.checkIn,
+        checkOut: r.checkOut,
+        status: r.status
+      }))
+    });
   } catch (error) {
-    logger.error('Error al crear reserva pública', error);
-    res.status(500).json({ 
+    logger.error('Error al crear reservas públicas múltiples', error);
+    res.status(500).json({
       success: false,
       message: 'Error interno del servidor. Por favor, inténtelo de nuevo.',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined

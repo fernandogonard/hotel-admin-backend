@@ -103,8 +103,15 @@ app.use(xssClean());
 // Parser de cookies para JWT seguro
 app.use(cookieParser(process.env.SESSION_SECRET));
 
-// CORS configurado de forma segura
-app.use(cors(securityConfig.cors));
+// Configuración CORS para permitir frontend y credenciales
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 app.options('*', cors(securityConfig.cors));
 
 app.use(express.json({ limit: '10mb' }));

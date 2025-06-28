@@ -2,15 +2,15 @@
 import express from 'express';
 import { createReservation, getAllReservations, updateReservation, deleteReservation, createPublicReservation, checkInReservation, checkOutReservation, cancelReservation, getActiveReservationsByRoom } from '../controllers/reservationController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { validateReservation, checkReservationOverlap } from '../middleware/validators-unified.js';
+import { validateReservation, checkReservationOverlap, validateMultiReservation } from '../middleware/validators-unified.js';
 
 const router = express.Router();
 
-// Ruta para crear una reserva
-router.post('/', protect, validateReservation, checkReservationOverlap, createReservation);
+// Ruta para crear una reserva múltiple (protegido)
+router.post('/', protect, validateMultiReservation, createReservation);
 
-// Ruta pública para reservas desde la web (sin JWT) - usar controlador específico
-router.post('/public', createPublicReservation);
+// Ruta pública para reservas múltiples desde la web
+router.post('/public', validateMultiReservation, createPublicReservation);
 
 // Ruta para obtener todas las reservas
 router.get('/', protect, getAllReservations);

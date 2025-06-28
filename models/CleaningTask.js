@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const CleaningTaskSchema = new mongoose.Schema({
   room: {
@@ -34,4 +34,5 @@ const CleaningTaskSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('CleaningTask', CleaningTaskSchema);
+const CleaningTask = mongoose.model('CleaningTask', CleaningTaskSchema);
+export default CleaningTask;

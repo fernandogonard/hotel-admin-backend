@@ -38,11 +38,7 @@ export const getGeneralStats = async () => {
         }
       ]),
       Reservation.aggregate([
-        {
-          $match: {
-            checkIn: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Últimos 30 días
-          }
-        },
+        // { $match: { checkIn: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } }, // Últimos 30 días (comentado para mostrar todas)
         {
           $group: {
             _id: '$status',
